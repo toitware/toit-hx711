@@ -1,0 +1,5 @@
+prefixes:
+  hx711: ..
+packages:
+  ..:
+    path: ..
