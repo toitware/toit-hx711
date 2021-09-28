@@ -5,8 +5,11 @@
 import hx711 show Hx711
 import gpio
 
+CLOCK ::= gpio.Pin 17
+DATA  ::= gpio.Pin 16
+
 main:
-  hx711 := Hx711 --clock=17 --data=16
+  hx711 := Hx711 --clock=CLOCK --data=DATA
 
   while true:
     print "Sampled:  $(hx711.get Hx711.CHANNEL_A_GAIN_64)"

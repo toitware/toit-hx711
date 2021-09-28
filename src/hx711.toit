@@ -30,21 +30,21 @@ class Hx711:
   input_/Hx711Input? := null
 
   /// Read from channel A with a gain of 128. 
-  static CHANNEL_A_GAIN_128 ::= Hx711Input.private_ 25
+  static CHANNEL_A_GAIN_128/Hx711Input ::= Hx711Input.private_ 25
   /// Read from channel B with a gain of 32. 
-  static CHANNEL_B_GAIN_32  ::= Hx711Input.private_ 26
+  static CHANNEL_B_GAIN_32/Hx711Input  ::= Hx711Input.private_ 26
   /// Read from channel A with a gain of 64. 
-  static CHANNEL_A_GAIN_64  ::= Hx711Input.private_ 27
+  static CHANNEL_A_GAIN_64/Hx711Input  ::= Hx711Input.private_ 27
 
   /**
   The $clock pin is used as an output pin, connected to the UART hardware.
   The $data pin is used as an input GPIO pin.
   */
-  constructor --clock/int=17 --data/int=16:
-    data_ = gpio.Pin.in 16
-    clock_pin := gpio.Pin.out clock
+  constructor --clock/gpio.Pin --data/gpio.Pin:
+    data.config --input
+    data_ = data
     uart_port_ = uart.Port
-      --tx=clock_pin
+      --tx=clock
       --rx=null
       // This common baud rate gives an 8.6us pulse for each start bit, which is
       // in the range of 0.1us to 50us that the HX711 requires.
@@ -91,22 +91,14 @@ class Hx711:
       uart_port_.write SINGLE_PULSE_
       sleep --ms=1
 
-    if measurement == 0: return 0.0
-
-    if measurement < 0x80_0000:
-      if measurement == 0x7f_ffff:
-        return float.INFINITY
-      else:
-        return measurement.to_float / 0x80_0000
-    else:
-      if measurement == 0x80_0000:
-        return -float.INFINITY
-      else:
-        return (measurement - 0x100_0000).to_float / 0x80_0000
+    if measurement == 0x7f_ffff: return float.INFINITY
+    if measurement == 0x80_0000: return -float.INFINITY
+    if measurement < 0x80_0000: return measurement.to_float / 0x80_0000
+    return (measurement - 0x100_0000).to_float / 0x80_0000
 
   /**
   Takes 10 samples, discarding infinities unless there are a lot of
-    infinities.
+    infinities, in which case it returns positive or negative infinity.
   Discards outliers using the method of removing elements that are further
     from the mean than 1.5 interquartile ranges.  Returns the mean of the
     non-discarded samples.
@@ -125,7 +117,8 @@ class Hx711:
           infinities++
           if infinities > 20: return measurement
           samples = []
-      while samples.size >= 2:
+      while true:
+        assert: samples.size >= 2
         new_samples := remove_outlier_ samples
         if new_samples.size == samples.size:
           return mean_ samples
@@ -133,7 +126,7 @@ class Hx711:
 
   median_ l/List:
     if l.size == 0: throw "Too few data points"
-    sorted := l.sort: | a b | a - b
+    sorted := l.sort
     if sorted.size & 1 == 0:
       // Even number of elements.  Eg. if there are 6 then take the average of
       // sorted[2] and sorted[3].
@@ -144,7 +137,7 @@ class Hx711:
 
   interquartile_range_ l/List:
     if l.size < 2: throw "Too few data points"
-    sorted := l.sort: | a b | a - b
+    sorted := l.sort
     s := sorted.size
     if s & 1 == 0:
       // Even number of elements.
