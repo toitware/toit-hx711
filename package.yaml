@@ -1,1 +1,2 @@
-# Toit Package.
+name: hx711
+description: A driver for the HX711 analog-to-digital converter often used for scales.
