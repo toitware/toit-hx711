@@ -1,2 +1,5 @@
 name: hx711
 description: A driver for the HX711 analog-to-digital converter often used for scales.
+
+environment:
+  sdk: ^2.0.0-alpha.144

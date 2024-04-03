@@ -29,11 +29,11 @@ class Hx711:
   uart_port_/uart.Port := ?
   input_/Hx711Input? := null
 
-  /// Read from channel A with a gain of 128. 
+  /// Read from channel A with a gain of 128.
   static CHANNEL_A_GAIN_128/Hx711Input ::= Hx711Input.private_ 25
-  /// Read from channel B with a gain of 32. 
+  /// Read from channel B with a gain of 32.
   static CHANNEL_B_GAIN_32/Hx711Input  ::= Hx711Input.private_ 26
-  /// Read from channel A with a gain of 64. 
+  /// Read from channel A with a gain of 64.
   static CHANNEL_A_GAIN_64/Hx711Input  ::= Hx711Input.private_ 27
 
   /**
@@ -41,7 +41,7 @@ class Hx711:
   The $data pin is used as an input GPIO pin.
   */
   constructor --clock/gpio.Pin --data/gpio.Pin:
-    data.config --input
+    data.configure --input
     data_ = data
     uart_port_ = uart.Port
       --tx=clock
@@ -64,12 +64,13 @@ class Hx711:
     $Hx711.CHANNEL_A_GAIN_64.
   */
   get input/Hx711Input -> float:
+    writer := uart_port_.out
     if input_ != input:
       // If the input setting is wrong we do a dummy read to set the input
       // correctly.
       data_.wait_for 0
       input.pulses.repeat:
-        uart_port_.write SINGLE_PULSE_
+        writer.write SINGLE_PULSE_
         sleep --ms=1
       input_ = input
 
@@ -78,8 +79,8 @@ class Hx711:
 
     measurement := 0
 
-    24.repeat: 
-      uart_port_.write SINGLE_PULSE_
+    24.repeat:
+      writer.write SINGLE_PULSE_
       sleep --ms=1
       measurement <<= 1
       bit := data_.get
@@ -88,7 +89,7 @@ class Hx711:
     // The number of pulses (25 to 27) determines the input setting of the next
     // reading.
     (input_.pulses - 24).repeat:
-      uart_port_.write SINGLE_PULSE_
+      writer.write SINGLE_PULSE_
       sleep --ms=1
 
     if measurement == 0x7f_ffff: return float.INFINITY
