@@ -12,5 +12,5 @@ main:
   hx711 := Hx711 --clock=CLOCK --data=DATA
 
   while true:
-    print "Sampled:  $(hx711.get Hx711.CHANNEL_A_GAIN_64)"
-    print "Averaged: $(hx711.average_of_10 Hx711.CHANNEL_A_GAIN_64)"
+    print "Sampled:  $(hx711.get Hx711.CHANNEL-A-GAIN-64)"
+    print "Averaged: $(hx711.average-of-10 Hx711.CHANNEL-A-GAIN-64)"
