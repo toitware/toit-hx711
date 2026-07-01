@@ -3,10 +3,9 @@
 // be found in the EXAMPLES_LICENSE file.
 
 import hx711 show Hx711
-import gpio
 
-CLOCK ::= gpio.Pin 17
-DATA  ::= gpio.Pin 16
+CLOCK ::= 17
+DATA  ::= 16
 
 main:
   hx711 := Hx711 --clock=CLOCK --data=DATA
