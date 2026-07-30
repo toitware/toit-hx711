@@ -28,6 +28,9 @@ class Hx711:
   data_/gpio.Pin := ?
   uart-port_/uart.Port := ?
   input_/Hx711Input? := null
+  // GPIO pins the driver created itself (from an integer argument) and must
+  // therefore close again. Empty when the caller passed a (deprecated) gpio.Pin.
+  created-pins_ /List := []
 
   /// Read from channel A with a gain of 128.
   static CHANNEL-A-GAIN-128/Hx711Input ::= Hx711Input.private_ 25
@@ -39,10 +42,21 @@ class Hx711:
   /**
   The $clock pin is used as an output pin, connected to the UART hardware.
   The $data pin is used as an input GPIO pin.
+
+  The pins are GPIO numbers. Passing a $gpio.Pin is deprecated; provide the integer
+    GPIO number instead.
   */
-  constructor --clock/gpio.Pin --data/gpio.Pin:
-    data.configure --input
-    data_ = data
+  // __TYPE-MIGRATION__ clock: gpio.Pin. Deprecated. Provide an integer instead.
+  // __TYPE-MIGRATION__ clock: int
+  // __TYPE-MIGRATION__ data: gpio.Pin. Deprecated. Provide an integer instead.
+  // __TYPE-MIGRATION__ data: int
+  constructor --clock/any --data/any:
+    if data is int:
+      data_ = gpio.Pin data --input
+      created-pins_.add data_
+    else:
+      data_ = data as gpio.Pin
+      data_.configure --input
     uart-port_ = uart.Port
       --tx=clock
       --rx=null
@@ -51,6 +65,18 @@ class Hx711:
       --baud-rate=115200
       // We want the idle state to be low and the start bit to be high.
       --invert-tx=true
+
+  /**
+  Closes the driver and releases the associated resources.
+
+  Closes the UART port (and thus the clock pin) as well as any GPIO pin the
+    driver created itself. Pins that were passed in as a (deprecated) $gpio.Pin
+    are not closed.
+  */
+  close -> none:
+    uart-port_.close
+    created-pins_.do: it.close
+    created-pins_ = []
 
   // The actual pattern on the UART TX pin will be a start bit (high,
   // 8.6us), eight data bits (low, since the TX pin is inverted) and a stop bit
